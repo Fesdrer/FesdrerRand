@@ -14,17 +14,17 @@
 
 `FESDRER_STL` 内包含一个类 `FVector`，这是用平衡树实现的 `vector`，与传统的 `vector` 相比对 `insert()` 和 `erase()` 进行了提速。可以使用的功能有：
 
-- `clear()`，$\mathcal O(1)$
-- `assign(int n,int val)`，$\mathcal O(n\log n)$
-- `size()`，$\mathcal O(1)$
-- `push_back(int val)`，$\mathcal O(\log n)$
-- `operator[int index]`，$\mathcal O(\log n)$
+- `clear()`， $\mathcal O(1)$
+- `assign(int n,int val)`， $\mathcal O(n\log n)$
+- `size()`， $\mathcal O(1)$
+- `push_back(int val)`， $\mathcal O(\log n)$
+- `operator[int index]`， $\mathcal O(\log n)$
 
 以上与函数传统的 `vector` 功能相同。
 
-- `erase(int index)`，删除下标为 $index$ 的元素，$\mathcal O(\log n)$
-- `insert(int index,int val)`，在 $index$ 位置前加入元素 $val$，$\mathcal O(\log n)$
-- `lower_bound(int val)`，在元素从小到大排序的前提下，求出最小的大于等于 $val$ 的元素的下标，$\mathcal O(\log n)$
+- `erase(int index)`，删除下标为 $index$ 的元素， $\mathcal O(\log n)$
+- `insert(int index,int val)`，在 $index$ 位置前加入元素  $val$， $\mathcal O(\log n)$
+- `lower_bound(int val)`，在元素从小到大排序的前提下，求出最小的大于等于 $val$ 的元素的下标， $\mathcal O(\log n)$
 
 这个类主要是为了方便实现下面随机化函数的一些功能的。
 
