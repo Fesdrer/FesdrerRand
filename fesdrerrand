@@ -1,9 +1,11 @@
 /**
- * 这是由 Fesdrer 独立编写的随机数局类型生成器。
+ * 这是由 Fesdrer 独立编写的随机数据类型生成器。
  * 
  * 能够方便进行信息学奥林匹克竞赛（OI）中的测试数据生成及对拍工作。
  * 
- * @param random 这是最基本的随机整数生成器。
+ * @param FVector 这是用平衡树实现的 vector，与传统的 vector 相比对 insert 和 erase 进行了提速
+ * 
+ * @param random 这是最基本的随机整数生成器
  * 
  * @param RandomBasic 基本随机函数，包含随机打乱数组、随机生成数组、随机生成字符串
  * 
@@ -28,6 +30,7 @@
 
 
 #include <iostream>
+#include <cstring>
 #include <chrono>
 #include <unordered_set>
 #include <random>
@@ -37,7 +40,101 @@
 #include <assert.h>
 
 
+namespace FESDRER_STL{
+	class FVector{
+	private:
+		struct TreeNode{int ls,rs,val,randnum,siz;};
+		std::vector<TreeNode> tr;
+		int root;
+		inline int New(int val){
+			tr.push_back((TreeNode){0,0,val,rand(),1});
+			return int(tr.size())-1;
+		}
+		inline void pushup(int p){
+			tr[p].siz=tr[tr[p].ls].siz+tr[tr[p].rs].siz+1;
+		}
+		inline void split(int p,int key,int &pr,int &qr){
+			if(!p){
+				pr=qr=0;
+				return;
+			}
+			if(tr[tr[p].ls].siz+1<=key)	pr=p,split(tr[p].rs,key-tr[tr[p].ls].siz-1,tr[p].rs,qr);
+			else	qr=p,split(tr[p].ls,key,pr,tr[p].ls);
+			pushup(p);
+		}
+		inline int merge(int p,int q){
+			if(!p||!q)  return p|q;
+			if(tr[p].randnum>tr[q].randnum){
+				tr[p].rs=merge(tr[p].rs,q);
+				pushup(p);
+				return p;
+			}
+			else{
+				tr[q].ls=merge(p,tr[q].ls);
+				pushup(q);
+				return q;
+			}
+		}
+	public:
+		inline void clear(){
+			root=0,tr.assign(1,(TreeNode){0,0,0,0,0});
+		}
+		inline void assign(int n,int val=0){
+			root=0,tr.assign(1,(TreeNode){0,0,0,0,0});
+			if(n>0){
+				root=New(val),n--;
+				while(n--)	root=merge(root,New(val));
+			}
+		}
+		inline FVector(){
+			clear();
+		}
+		inline FVector(int n,int val=0){
+			assign(n,val);
+		}
+		inline int size(){
+			return tr[root].siz;
+		}
+		inline void push_back(int val){
+			root=merge(root,New(val));
+		}
+		int& operator[](int index){
+			index++;
+			int p=root;
+			while(p){
+				if(tr[tr[p].ls].siz+1==index)	return tr[p].val;
+				else if(tr[tr[p].ls].siz>=index)	p=tr[p].ls;
+				else	index-=1+tr[tr[p].ls].siz,p=tr[p].rs;
+			}
+			return tr[root].val;
+		}
+		inline void erase(int index){
+			int p,mid,q;
+			split(root,index,p,q);
+			split(q,1,mid,q);
+			root=merge(p,q);
+		}
+		inline void insert(int index,int val){
+			int p,q;
+			split(root,index,p,q);
+			root=merge(merge(p,New(val)),q);
+		}
+		inline int lower_bound(int val){
+			int ret=size(),p=root,nowadd=0;
+			while(p){
+				if(tr[p].val>=val)	ret=tr[tr[p].ls].siz+nowadd,p=tr[p].ls;
+				else if(tr[p].val<val)	nowadd+=1+tr[tr[p].ls].siz,p=tr[p].rs;
+				else	p=tr[p].ls;
+			}
+			return ret;
+		}
+	};
+}
+
+
 namespace FESDRER_RAND{
+
+
 	static std::mt19937_64 rng_64(std::chrono::steady_clock::now().time_since_epoch().count());
 
 
@@ -67,17 +164,24 @@ namespace FESDRER_RAND{
 			}
 		}
 		//随机生成一个数组。
-		template<typename T> std::vector<T> random_sequence(int n,T l,T r){
+		template<typename T> inline std::vector<T> random_sequence(int n,T l,T r){
 			std::vector<T> ret;ret.clear();
 			while(n--)	ret.push_back(random(l,r));
 			return ret;
 		}
-		//随即返回一个字符串，字符集是 charset
-		inline std::string random_string(int n,std::string charset="abcdefghijklmnopqrstuvwxyz"){
+		template<typename T,typename V> inline void random_sequence(T first,T last,V l,V r){
+			for(T i=first;i!=last;i++)	(*i)=random(l,r);
+		}
+		//随机返回一个字符串，字符集是 charset
+		inline std::string random_string(int n,const char* charset="abcdefghijklmnopqrstuvwxyz"){
 			std::string ret="";
-			int leng=charset.length();
+			int leng=strlen(charset);
 			for(int i=0;i<n;i++)	ret+=charset[random(0,leng-1)];
 			return ret;
+		}
+		inline void random_string(char* first,char* last,const char* charset="abcdefghijklmnopqrstuvwxyz"){
+			int leng=strlen(charset);
+			for(char* i=first;i!=last;i++)	(*i)=charset[random(0,leng-1)];
 		}
 	};
 	static RANDOMBASIC RandomBasic;
@@ -89,26 +193,26 @@ namespace FESDRER_RAND{
 		//输出数组，输出一行。
 		template<typename T> inline void print_sequence(T first,T second){
 			for(T it=first;it!=second;it++)	std::cout<<(*it)<<" ";
-			std::cout<<std::endl;
+			std::cout<<'\n';
 		}
 		//输出数组，输出一行。
 		template<typename T> inline void print_sequence(std::vector<T> s){
 			for(T i:s)	std::cout<<i<<" ";
-			std::cout<<std::endl;
+			std::cout<<'\n';
 		}
 		//输出由二元组组成的数组，每个二元组一行。
 		template<typename T> inline void print_sequence_pair(T first,T second){
-			for(T it=first;it!=second;it++)	std::cout<<(*it).first<<" "<<(*it).second<<std::endl;
+			for(T it=first;it!=second;it++)	std::cout<<(*it).first<<" "<<(*it).second<<'\n';
 		}
 		//输出由二元组组成的数组，每个二元组一行。
 		template<typename T> inline void print_sequence_pair(std::vector<T> s){
-			for(T i:s)	std::cout<<i.first<<" "<<i.second<<std::endl;
+			for(T i:s)	std::cout<<i.first<<" "<<i.second<<'\n';
 		}
 		//输出二维数组，每个维度的数组一行。
 		template<typename T> inline void print_sequence_of_sequence(std::vector<std::vector<T>> s){
 			for(std::vector<T> i:s){
 				for(T j:i)	std::cout<<j<<" ";
-				std::cout<<std::endl;
+				std::cout<<'\n';
 			}
 		}
 		/*
@@ -116,21 +220,21 @@ namespace FESDRER_RAND{
 		支持随机生成每条边的权值，支持输出给定的权值。
 		*/
 		inline void print_graph(std::vector<std::pair<int,int>> graph){
-			for(std::pair<int,int> i:graph)	std::cout<<i.first<<" "<<i.second<<std::endl;
+			for(std::pair<int,int> i:graph)	std::cout<<i.first<<" "<<i.second<<'\n';
 		}
 		/*
 		输出图中的每条边 (x,y)，每行输出一条边，格式为 "x y"。
 		支持随机生成每条边的权值，支持输出给定的权值。
 		*/
 		inline void print_graph(std::vector<std::pair<int,int>> graph,long long l,long long r){
-			for(std::pair<int,int> i:graph)	std::cout<<i.first<<" "<<i.second<<" "<<random(l,r)<<std::endl;
+			for(std::pair<int,int> i:graph)	std::cout<<i.first<<" "<<i.second<<" "<<random(l,r)<<'\n';
 		}
 		/*
 		输出图中的每条边 (x,y)，每行输出一条边，格式为 "x y"。
 		支持随机生成每条边的权值，支持输出给定的权值。
 		*/
 		inline void print_graph(std::vector<std::pair<std::pair<int,int>,int>> graph){
-			for(std::pair<std::pair<int,int>,int> i:graph)	std::cout<<i.first.first<<" "<<i.first.second<<" "<<i.second<<std::endl;
+			for(std::pair<std::pair<int,int>,int> i:graph)	std::cout<<i.first.first<<" "<<i.first.second<<" "<<i.second<<'\n';
 		}
 		//输出树上第 2 到 n 号节点的父亲（根节点为 1）
 		inline void print_tree_father(std::vector<std::pair<int,int>> tree){
@@ -152,7 +256,7 @@ namespace FESDRER_RAND{
 				}
 			}
 			for(int i=1;i<n;i++)	std::cout<<fa[i]<<" ";
-			std::cout<<std::endl;
+			std::cout<<'\n';
 		}
 	};
 	static RANDOMPRINT RandomPrint;
@@ -164,6 +268,7 @@ namespace FESDRER_RAND{
 		//返回 [l,r] 中除了 S 中元素外的 p 个不同的元素。不调用 S 代表 S 为空。
 		template<typename T> inline std::vector<T> random_different(T l,T r,int p){
 			assert(r-l+1>=p);
+			if(p==0)	return std::vector<T>(0);
 			std::vector<T> now(0);
 			if((r-l+1)/p<=10){
 				for(T i=l;i<=r;i++)	now.push_back(i);
@@ -183,12 +288,13 @@ namespace FESDRER_RAND{
 		//返回 [l,r] 中除了 S 中元素外的 p 个不同的元素。不调用 S 代表 S 为空。
 		template<typename T> inline std::vector<T> random_different(T l,T r,int p,std::unordered_set<T> S){
 			assert(r-l+1>=p+S.size());
+			if(p==0)	return std::vector<T>(0);
 			std::vector<T> now(0);
 			if((r-l+1)/p<=10){
 				for(T i=l;i<=r;i++)	if(S.find(i)==S.end())	now.push_back(i);
 				RandomBasic.random_shuffle(now.begin(),now.end());
 				int nowsiz=int(now.size());
-				while(nowsiz>p)	now.pop_back();
+				while(nowsiz>p)	now.pop_back(),nowsiz--;
 				return now;
 			}
 			while(p--){
@@ -198,7 +304,7 @@ namespace FESDRER_RAND{
 			}
 			return now;
 		}
-		//将 [l,r] 中的数分成 p 份，并通过 limits 限制每份数量上限。
+		//将 [l,r] 中的数分成 p 份。
 		inline std::vector<std::vector<int>> random_divide(int l,int r,int p){
 			if(l>r&&p==0)	return std::vector<std::vector<int>>(0);
 			assert(p>=1&&p<=r-l+1);
@@ -227,14 +333,14 @@ namespace FESDRER_RAND{
 			for(int i=0;i<p;i++)	id[i]=i;
 			sort(id.begin(),id.end(),[&](const int x,const int y){return limits[x]>limits[y];});
 			std::vector<std::vector<int>> spread(p);
-			std::vector<int> choose(0);
+			FESDRER_STL::FVector choose;
 			int top=0;
 			for(int i=0;i<p;i++)	spread[i].assign(1,idnum[i]);
 			for(int i=p;i<r-l+1;i++){
-				int ids=(top==p?random(0,int(choose.size())-1):random(0,int(choose.size())));
-				if(ids==int(choose.size()))	choose.push_back(top++);
+				int ids=(top==p?random(0,choose.size()-1):random(0,choose.size()));
+				if(ids==choose.size())	choose.push_back(top++);
 				spread[choose[ids]].push_back(idnum[i]);
-				if(limits[id[choose[ids]]]==int(spread[choose[ids]].size()))	choose.erase(choose.begin()+ids);
+				if(limits[id[choose[ids]]]==int(spread[choose[ids]].size()))	choose.erase(ids);
 			}
 			std::vector<std::vector<int>> ret(p);
 			for(int i=0;i<p;i++)	ret[id[i]]=spread[i];
@@ -253,14 +359,15 @@ namespace FESDRER_RAND{
 			std::vector<int> id(p);
 			for(int i=0;i<p;i++)	id[i]=i;
 			sort(id.begin(),id.end(),[&](const int x,const int y){return limits[x]>limits[y];});
-			std::vector<int> spread(p),choose(0);
+			std::vector<int> spread(p);
+			FESDRER_STL::FVector choose;
 			int top=0;
 			for(int i=0;i<p;i++)	spread[i]=1;
 			for(int i=p;i<n;i++){
-				int ids=(top==p?random(0,int(choose.size())-1):random(0,int(choose.size())));
-				if(ids==int(choose.size()))	choose.push_back(top++);
+				int ids=(top==p?random(0,choose.size()-1):random(0,choose.size()));
+				if(ids==choose.size())	choose.push_back(top++);
 				spread[choose[ids]]++;
-				if(limits[id[choose[ids]]]==int(spread[choose[ids]]))	choose.erase(choose.begin()+ids);
+				if(limits[id[choose[ids]]]==int(spread[choose[ids]]))	choose.erase(ids);
 			}
 			std::vector<int> ret(p);
 			for(int i=0;i<p;i++)	ret[id[i]]=spread[i];
@@ -290,7 +397,7 @@ namespace FESDRER_RAND{
 			for(std::pair<std::pair<int,int>,int> &i:edges)
 				i.first.first=idnum[i.first.first-1],i.first.second=idnum[i.first.second-1];
 		}
-		//返回 n 个节点的图中每个点的出边到达的点。directional 表示是否有向。
+		//返回 n 个节点的图中每个点的出边到达的点。directional 表示是否有向。下标从 0 开始。
 		inline std::vector<std::vector<int>> get_outedge(int n,std::vector<std::pair<int,int>> edges,bool directional){
 			std::vector<std::vector<int>> e(n,std::vector<int>(0));
 			for(std::pair<int,int> &it:edges){
@@ -306,11 +413,15 @@ namespace FESDRER_RAND{
 				if(!directional&&x>y)	std::swap(x,y);
 				return 1ll*(x-1)*n+y;
 			};
-			int m=int(graph.size());
+			int m=int(graph.size()),_=0;
 			for(int i=0;i<m;i++){
-				if(S.find(Gid(graph[i].first,graph[i].second))!=S.end())	graph.erase(graph.begin()+i),m--,i--;
-				else	S.insert(Gid(graph[i].first,graph[i].second));
+				if(S.find(Gid(graph[i].first,graph[i].second))==S.end()){
+					if(_==i)	_++;
+					else	graph[_++]=graph[i];
+					S.insert(Gid(graph[i].first,graph[i].second));
+				}
 			}
+			while(m>_)	graph.pop_back(),m--;
 		}
 		//在 n 个节点的图中随即加入 addnum 个自环（不保证没有重复的自环）。
 		inline void add_self_rings(int n,std::vector<std::pair<int,int>> &graph,int addnum){
@@ -425,7 +536,7 @@ namespace FESDRER_RAND{
 			ret&=(!(directional&&!repeated_edges&&1ll*m>1ll*n*(n-1)+n*(self_rings)));
 			ret&=(!(!directional&&!repeated_edges&&1ll*m>1ll*n*(n-1)/2+n*(self_rings)));
 			ret&=(!(n==1&&!self_rings&&m>0));
-			if(!ret)	std::cerr<<"Error: "<<n<<" "<<m<<" "<<connected<<" "<<repeated_edges<<" "<<self_rings<<" "<<directional<<std::endl;
+			if(!ret)	std::cerr<<"Error: "<<n<<" "<<m<<" "<<connected<<" "<<repeated_edges<<" "<<self_rings<<" "<<directional<<'\n';
 			return ret;
 		}
 		/*
@@ -486,7 +597,7 @@ namespace FESDRER_RAND{
 								x=random(1,n),y=random(1,n);
 								if(!directional&&x>y)	std::swap(x,y);
 								if(!self_rings&&x==y)	(x==n?x--:y++);
-								if(S.find(Gid(x,y))!=S.end())	break;
+								if(S.find(Gid(x,y))==S.end())	break;
 							}
 							edgenum.push_back(Gid(x,y)),S.insert(Gid(x,y));
 						}
@@ -548,7 +659,7 @@ namespace FESDRER_RAND{
 		//检查点数 n 和边数 m 是否合法。
 		inline bool check(int n,int m){
 			if(m>=n-1)	return true;
-			std::cerr<<"Error: "<<n<<" "<<m<<std::endl;
+			std::cerr<<"Error: "<<n<<" "<<m<<'\n';
 			return false;
 		}
 		/*
@@ -570,18 +681,21 @@ namespace FESDRER_RAND{
 			for(int &i:degree)	i--;
 			for(int i=0;i<numn0;i++)	degree[i]++;
 			sort(degree.begin(),degree.end());
+			FESDRER_STL::FVector fdegree;
+			for(int i:degree)	fdegree.push_back(i);
 			int sum=0;
 			for(int i=1;i<n;i++){
-				int l=i-1,r=upper_bound(degree.begin()+l,degree.end(),i-sum)-degree.begin()-1;
-				int id=random(l,r),num=degree[l];
-				sum+=degree[id];
+				int l=i-1,r=fdegree.lower_bound(i-sum)-1;
+				int id=random(l,r),num=fdegree[l];
+				sum+=fdegree[id];
 				if(id>l){
-					degree[l]=degree[id];
-					degree.erase(degree.begin()+id);
-					degree.insert(upper_bound(degree.begin()+l+1,degree.end(),num),num);
+					fdegree[l]=fdegree[id];
+					fdegree.erase(id),fdegree.insert(fdegree.lower_bound(num+1),num);
 				}
 			}
-			n++,m=m+1-n+1,degree.insert(degree.begin(),1);
+			n++,m=m+1-n+1;
+			degree.assign(1,1);
+			for(int i=0;i<fdegree.size();i++)	degree.push_back(fdegree[i]);
 			for(int i=0;i<n-1;i++)	if(!degree[i])	m--;
 			std::vector<int> nodegree=RandomAnother.random_divide_num(m+n-1,n-1);
 			reverse(nodegree.begin(),nodegree.end());
@@ -591,14 +705,16 @@ namespace FESDRER_RAND{
 		}
 		inline std::vector<std::pair<int,int>> singlest_dag(int n,int m){
 			std::pair<std::vector<int>,std::vector<int>> degree=outdegree(n,m);
-			std::vector<int> end(1,1),noend(0);
+			FESDRER_STL::FVector end(1,1);
+			std::vector<int> noend(0);
 			std::vector<std::pair<int,int>> graph(0);
 			for(int i=2;i<=n;i++){
 				int endde=degree.first[i-2],node=degree.second[i-2],id;
 				while(endde--){
-					id=random(0,int(end.size())-1);
+					id=random(0,end.size()-1);
 					graph.push_back({end[id],i});
-					noend.push_back(end[id]),end.erase(end.begin()+id);
+					noend.push_back(end[id]);
+					end.erase(id);
 				}
 				while(node--){
 					id=random(0,int(noend.size())-1);
@@ -661,7 +777,7 @@ namespace FESDRER_RAND{
 			ret&=(n!=sccn||m==sccm);
 			ret&=(sccn<=n);
 			if(ret)	return true;
-			else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<sccn<<" "<<sccm<<std::endl;
+			else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<sccn<<" "<<sccm<<'\n';
 			return false;
 		}
 		/*
@@ -690,11 +806,14 @@ namespace FESDRER_RAND{
 			assert(int(dag.size())==sccm);
 			int simgle_num=std::max(0,n-(m-sccm));
 			if(simgle_num==n)	return dag;
-			std::vector<std::vector<int>> scc=RandomAnother.random_divide(1,n-simgle_num,sccn-simgle_num);
+			std::vector<std::vector<int>> scc=RandomAnother.random_divide(1,n-simgle_num,sccn-simgle_num),basescc(0);
 			std::vector<int> simgle_id;simgle_id.clear();
 			for(int i=n;i>n-simgle_num;i--)	simgle_id.push_back(i);
-			for(int i=sccn-simgle_num-1;i>=0;i--)	if(scc[i].size()==1)
-				simgle_id.push_back(scc[i][0]),simgle_num++,scc.erase(scc.begin()+i);
+			for(int i=0;i<sccn-simgle_num;i++){
+				if(scc[i].size()==1)	simgle_id.push_back(scc[i][0]),simgle_num++;
+				else	basescc.push_back(scc[i]);
+			}
+			scc=basescc;
 			std::vector<int> edgen=RandomAnother.random_divide_num(m-sccm-n+sccn,sccn-simgle_num);
 			std::vector<std::pair<int,int>> graph;graph.clear();
 			auto Get=[&](const std::vector<int> &vec){return vec[random(0,vec.size()-1)];};
@@ -739,7 +858,7 @@ namespace FESDRER_RAND{
 		//检查点数 n 边数 m 边双连通分量数 edccn 是否合法。
 		inline bool check(int n,int m,int edccn){
 			if(RandomScc.check(n,m,edccn,edccn-1))	return true;
-			std::cerr<<"Error: "<<n<<" "<<m<<" "<<edccn<<std::endl;
+			std::cerr<<"Error: "<<n<<" "<<m<<" "<<edccn<<'\n';
 		}
 		/*
 		生成一个点数不超过 N，边数不超过 M 的点数和边数以及边双连通分量数 edccn，以 {n,m,edccn} 的形式返回。注意 N 和 M 应大于等于 3。
@@ -770,11 +889,11 @@ namespace FESDRER_RAND{
 		inline bool check(int n,int m,int vdccn){
 			if(n==1){
 				if(m==0&&vdccn==1)	return true;
-				else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<vdccn<<std::endl;
+				else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<vdccn<<'\n';
 				return false;
 			}
 			if(vdccn<=n-1&&m>=n-1+(n-1!=vdccn))	return true;
-			else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<vdccn<<std::endl;
+			else	std::cerr<<"Error: "<<n<<" "<<m<<" "<<vdccn<<'\n';
 			return false;
 		}
 		/*
@@ -790,23 +909,24 @@ namespace FESDRER_RAND{
 			return {n,m,vdccn};
 		}
 	private:
+		//返回每个vdcc的组成，基本思路是模拟vdcc通过一个个割点连成一棵树的过程
 		inline std::vector<std::vector<int>> vdcc_spread(int n,int m,int vdccn){
 			if(n==1)	return std::vector<std::vector<int>>{std::vector<int>{1}};
 			int double_num=std::max(0,n-1+vdccn-m);
-			std::vector<int> degree=RandomAnother.random_divide_num(n-1-double_num,vdccn-double_num);
+			std::vector<int> degree=RandomAnother.random_divide_num(n-1-double_num,vdccn-double_num);//每个 vdcc 的边数
 			for(int &i:degree)	i+=1;
 			for(int i=1;i<=double_num;i++)	degree.push_back(2);
 			sort(degree.begin(),degree.end());
-			std::vector<int> top(1,0);
-			std::vector<std::vector<int>> fa(1,std::vector<int>{0}),vdcc(0);
+			FESDRER_STL::FVector top(1,0);//当前剩下哪些点没成为vdcc
+			std::vector<std::vector<int>> fa(1,std::vector<int>{0}),vdcc(0);//fa是并查集中的上级
 			for(int i=1;i<=n;i++)	fa.push_back(std::vector<int>{i}),top.push_back(i);
 			for(int nowdegree:degree){
-				std::vector<int> topid=RandomAnother.random_different(1,int(top.size())-1,nowdegree);
+				std::vector<int> topid=RandomAnother.random_different(1,top.size()-1,nowdegree);
 				sort(topid.begin(),topid.end());
 				for(int i=0;i<nowdegree;i++){
 					int __=topid[i];
 					topid[i]=top[topid[i]-i];
-					top.erase(top.begin()+__-i);
+					top.erase(__-i);
 				}
 				int mx=0;
 				std::vector<int> nowvdcc(0);
