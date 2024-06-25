@@ -1,3 +1,25 @@
+/**
+ * 这是由 Fesdrer 独立编写的随机数局类型生成器。
+ * 
+ * 能够方便进行信息学奥林匹克竞赛（OI）中的测试数据生成及对拍工作。
+ * 
+ * @param random 这是最基本的随机整数生成器。
+ * 
+ * @param RandomBasic 基本随机函数，包含随机打乱数组、随机生成数组、随机生成字符串
+ * 
+ * @param RandomPrint 输出函数，方便地输出数组、图、树
+ * 
+ * @param RandomAnother 其他随机函数，包括返回不同地若干数、分离若干数
+ * 
+ * @param RandomGraphTool 打乱节点编号、加自环、去重边、生成不连通图等图操作
+ * 
+ * @param RandomTreeGraphHackspfaDagSccEdccVdcc 随机生成各类图
+ * 
+ * @param CheckTreeSccEdccVdcc 检查树深度、度数、极大连通分量
+ * 
+ * @author Fesdrer
+ */
+
 #ifndef FESDRERRAND_H
 #define FESDRERRAND_H 1
 
