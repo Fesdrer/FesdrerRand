@@ -6,7 +6,7 @@
 
 接下来依次粗略介绍各个文件的功能（详细功能请看代码）：
 
-# `FesdrerRand`
+# `fesdrerrand.h`
 
 该文件用 c++ 语言编写，是用来辅助编写输入数据生成程序的。其包含 $3$​ 个 `namespace`：`FESDRER_STL`，`FESDRER_RAND`，`FESDRER_CKECK`。
 
