@@ -152,6 +152,20 @@ namespace FESDRER_RAND{
 	}
 
 
+	/*
+	在 [l,r] 中随机生成一个实数。
+	opt 在 [0,+infinity]，其越大，生成的整数越可能接近 r。	
+	*/
+	inline double randomreal(double l,double r,double opt=1){
+		if(fabs(opt-1)>1e-8){
+			double it=std::uniform_real_distribution<double>(1,10000)(rng_64);
+			it/=10000.0,it=pow((1-pow(1-it,opt)),1.0/opt);
+			return (r-l)*it+l;
+		}
+		return std::uniform_real_distribution<double>(l,r)(rng_64);
+	}
+
+
 	//基本随机函数
 	class RANDOMBASIC{
 	public:
@@ -1144,6 +1158,7 @@ namespace FESDRER_CHECK{
 
 
 using FESDRER_RAND::random;
+using FESDRER_RAND::randomreal;
 using FESDRER_RAND::RandomBasic;
 using FESDRER_RAND::RandomPrint;
 using FESDRER_RAND::RandomAnother;
