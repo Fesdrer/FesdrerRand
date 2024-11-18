@@ -186,6 +186,18 @@ namespace FESDRER_RAND{
 		template<typename T,typename V> inline void random_sequence(T first,T last,V l,V r){
 			for(T i=first;i!=last;i++)	(*i)=random(l,r);
 		}
+		//随机生成一个排列。
+		inline std::vector<int> random_permutation(int n){
+			std::vector<int> ret(0);
+			for(int i=1;i<=n;i++)	ret.push_back(i);
+			random_shuffle(ret.begin(),ret.end());
+			return ret;
+		}
+		template<typename T> inline void random_permutation(T first,T last){
+			int p=0;
+			for(T i=first;i!=last;i++)	(*i)=++p;
+			random_shuffle(first,last);
+		}
 		//随机返回一个字符串，字符集是 charset
 		inline std::string random_string(int n,const char* charset="abcdefghijklmnopqrstuvwxyz"){
 			std::string ret="";
