@@ -174,7 +174,7 @@ namespace FESDRER_RAND{
 			if(first==last)	return;
 			for(T i=first+1;i!=last;i++){
 				T j=first+random(0,i-first);
-				if(i!=j)	iter_swap(i,j);
+				if(i!=j)	std::iter_swap(i,j);
 			}
 		}
 		//随机生成一个数组。
