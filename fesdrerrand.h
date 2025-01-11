@@ -830,12 +830,13 @@ namespace FESDRER_RAND{
 		inline std::vector<std::pair<int,int>> scc(int n,int m,int sccn,int sccm,std::vector<std::pair<int,int>> dag,double rho=1){
 			assert(check(n,m,sccn,sccm));
 			assert(int(dag.size())==sccm);
-			int simgle_num=std::max(0,n-(m-sccm));
+			int simgle_num=std::max(0,std::max(2*sccn-n,n-(m-sccm)));
 			if(simgle_num==n)	return dag;
 			std::vector<std::vector<int>> scc=RandomAnother.random_divide(1,n-simgle_num,sccn-simgle_num),basescc(0);
 			std::vector<int> simgle_id;simgle_id.clear();
 			for(int i=n;i>n-simgle_num;i--)	simgle_id.push_back(i);
-			for(int i=0;i<sccn-simgle_num;i++){
+			int _=sccn-simgle_num;
+			for(int i=0;i<_;i++){
 				if(scc[i].size()==1)	simgle_id.push_back(scc[i][0]),simgle_num++;
 				else	basescc.push_back(scc[i]);
 			}
